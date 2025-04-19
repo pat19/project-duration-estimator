@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <title>預估工期試算（排除假日）</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; }
+    input { margin: 5px; }
+    .result { margin-top: 20px; font-weight: bold; }
+  </style>
+</head>
+<body>
+  <h2>預估工期試算（扣除六日與國定假日）</h2>
+
+  <label for="engineers">工程師人數：</label>
+  <input type="number" id="engineers" value="4" min="1"><br>
+
+  <label for="programs">程式數量：</label>
+  <input type="number" id="programs" value="20" min="1"><br>
+
+  <button onclick="calculate()">計算工期</button>
+
+  <div class="result" id="output"></div>
+
+  <script>
+    const holidays = [
+      '2025-01-01', '2025-01-29', '2025-01-30', '2025-01-31',
+      '2025-02-03', '2025-02-04', '2025-02-05', '2025-02-28',
+      '2025-04-04', '2025-04-05', '2025-05-01', '2025-06-06',
+      '2025-09-17', '2025-10-10'
+    ];
+
+    function isHoliday(date) {
+      const yyyyMMdd = date.toISOString().split('T')[0];
+      return holidays.includes(yyyyMMdd);
+    }
+
+    function isWeekend(date) {
+      const day = date.getDay();
+      return day === 0 || day === 6;
+    }
+
+    function calculate() {
+      const engineers = parseInt(document.getElementById("engineers").value);
+      const programs = parseInt(document.getElementById("programs").value);
+      const baseEngineers = 4;
+      const basePrograms = 20;
+      const baseWeeks = 6;
+
+      const estimatedTotalDays = (baseWeeks * 7 * programs / basePrograms) * (baseEngineers / engineers);
+
+      const now = new Date();
+      const finishDate = new Date(now);
+      let workDaysCount = 0;
+
+      while (workDaysCount < estimatedTotalDays) {
+        finishDate.setDate(finishDate.getDate() + 1);
+        if (!isWeekend(finishDate) && !isHoliday(finishDate)) {
+          workDaysCount++;
+        }
+      }
+
+      const diffYears = (finishDate - now) / (1000 * 60 * 60 * 24 * 365);
+
+      const resultText = `預估實際工作天數：約 ${estimatedTotalDays.toFixed(0)} 天<br>` +
+                         `預估完工日（排除六日與國定假日）：${finishDate.toDateString()}<br>` +
+                         `距今約 ${diffYears.toFixed(2)} 年`;
+
+      document.getElementById("output").innerHTML = resultText;
+    }
+  </script>
+</body>
+</html>
