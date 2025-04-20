@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
@@ -6,20 +7,22 @@
   <style>
     body {
       font-family: Arial, sans-serif;
+      margin: 0;
       padding: 20px;
+    }
+    .container {
+      display: flex;
+      flex-wrap: wrap;
+    }
+    .form-section {
+      flex: 1;
+      min-width: 300px;
       max-width: 600px;
+      padding-right: 20px;
     }
-    input, label {
-      margin: 10px 0;
-      display: block;
-    }
-    .result {
-      margin-top: 20px;
-      font-weight: bold;
-    }
-    .slider-value {
-      font-weight: bold;
-      color: darkblue;
+    .image-section {
+      flex: 1;
+      min-width: 250px;
     }
     .slider-container {
       width: 100%;
@@ -34,48 +37,63 @@
     input[type=range] {
       width: 100%;
     }
+    .slider-value {
+      font-weight: bold;
+      color: darkblue;
+    }
+    .result {
+      margin-top: 20px;
+      font-weight: bold;
+    }
+    img {
+      max-width: 100%;
+      height: auto;
+      border: 1px solid #ccc;
+      margin-top: 20px;
+    }
   </style>
 </head>
 <body>
   <h2>預估工期試算（含成熟度系數）</h2>
+  <div class="container">
+    <div class="form-section">
+      <label for="engineers">工程師人數：</label>
+      <div class="slider-container">
+        <input type="range" id="engineers" min="4" max="10" step="1" value="4" oninput="updateEngineerLabel(this.value)">
+        <div class="slider-marks">
+          <span>4</span><span>5</span><span>6</span><span>7</span><span>8</span><span>9</span><span>10</span>
+        </div>
+      </div>
+      <div>目前工程師人數：<span class="slider-value" id="engineerValue">4</span></div>
 
-  <!-- 工程師人數 -->
-  <label for="engineers">工程師人數：</label>
-  <div class="slider-container">
-    <input type="range" id="engineers" min="4" max="10" step="1" value="4" oninput="updateEngineerLabel(this.value)">
-    <div class="slider-marks">
-      <span>4</span><span>5</span><span>6</span><span>7</span><span>8</span><span>9</span><span>10</span>
+      <label for="programIndex">程式數量：</label>
+      <div class="slider-container">
+        <input type="range" id="programIndex" min="0" max="4" step="1" value="0" oninput="updateProgramLabel(this.value)">
+        <div class="slider-marks">
+          <span>20</span><span>500</span><span>1000</span><span>2000</span><span>3000</span>
+        </div>
+      </div>
+      <div>目前程式數量：<span class="slider-value" id="programValue">20</span></div>
+
+      <label for="maturityLevel">成熟度等級（1～10，每級縮短5%）：</label>
+      <div class="slider-container">
+        <input type="range" id="maturityLevel" min="1" max="10" step="1" value="1" oninput="updateMaturityLabel(this.value)">
+        <div class="slider-marks">
+          <span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span><span>9</span><span>10</span>
+        </div>
+      </div>
+      <div>成熟度系數（工期乘以）：<span class="slider-value" id="maturityValue">1.00</span></div>
+
+      <div class="result" id="output"></div>
+    </div>
+
+    <div class="image-section">
+      <img src="structure.jpeg" alt="組織結構圖" style="width: 400px;">
     </div>
   </div>
-  <div>目前工程師人數：<span class="slider-value" id="engineerValue">4</span></div>
 
-  <!-- 程式數量（五固定點） -->
-  <label for="programIndex">程式數量：</label>
-  <div class="slider-container">
-    <input type="range" id="programIndex" min="0" max="4" step="1" value="0" oninput="updateProgramLabel(this.value)">
-    <div class="slider-marks">
-      <span>20</span><span>500</span><span>1000</span><span>2000</span><span>3000</span>
-    </div>
-  </div>
-  <div>目前程式數量：<span class="slider-value" id="programValue">20</span></div>
-
-  <!-- 成熟度系數 -->
-  <label for="maturityLevel">成熟度等級（1～10，每級縮短5%）：</label>
-  <div class="slider-container">
-    <input type="range" id="maturityLevel" min="1" max="10" step="1" value="1" oninput="updateMaturityLabel(this.value)">
-    <div class="slider-marks">
-      <span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span><span>9</span><span>10</span>
-    </div>
-  </div>
-  <div>成熟度系數（工期乘以）：<span class="slider-value" id="maturityValue">1.00</span></div>
-
-  <!-- 計算結果輸出 -->
-  <div class="result" id="output"></div>
-
-  <!-- JavaScript 運算邏輯 -->
   <script>
     const programOptions = [20, 500, 1000, 2000, 3000];
-
     const holidays = [
       '2025-01-01', '2025-01-29', '2025-01-30', '2025-01-31',
       '2025-02-03', '2025-02-04', '2025-02-05', '2025-02-28',
