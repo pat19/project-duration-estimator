@@ -2,27 +2,80 @@
 <html lang="zh-TW">
 <head>
   <meta charset="UTF-8">
-  <title>預估工期試算（排除假日）</title>
+  <title>預估工期試算（含成熟度系數）</title>
   <style>
-    body { font-family: Arial, sans-serif; padding: 20px; }
-    input { margin: 5px; }
-    .result { margin-top: 20px; font-weight: bold; }
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      max-width: 600px;
+    }
+    input, label {
+      margin: 10px 0;
+      display: block;
+    }
+    .result {
+      margin-top: 20px;
+      font-weight: bold;
+    }
+    .slider-value {
+      font-weight: bold;
+      color: darkblue;
+    }
+    .slider-container {
+      width: 100%;
+      max-width: 500px;
+    }
+    .slider-marks {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+      width: 100%;
+    }
+    input[type=range] {
+      width: 100%;
+    }
   </style>
 </head>
 <body>
-  <h2>預估工期試算（扣除六日與國定假日）</h2>
+  <h2>預估工期試算（含成熟度系數）</h2>
 
+  <!-- 工程師人數 -->
   <label for="engineers">工程師人數：</label>
-  <input type="number" id="engineers" value="4" min="1"><br>
+  <div class="slider-container">
+    <input type="range" id="engineers" min="4" max="10" step="1" value="4" oninput="updateEngineerLabel(this.value)">
+    <div class="slider-marks">
+      <span>4</span><span>5</span><span>6</span><span>7</span><span>8</span><span>9</span><span>10</span>
+    </div>
+  </div>
+  <div>目前工程師人數：<span class="slider-value" id="engineerValue">4</span></div>
 
-  <label for="programs">程式數量：</label>
-  <input type="number" id="programs" value="20" min="1"><br>
+  <!-- 程式數量（五固定點） -->
+  <label for="programIndex">程式數量：</label>
+  <div class="slider-container">
+    <input type="range" id="programIndex" min="0" max="4" step="1" value="0" oninput="updateProgramLabel(this.value)">
+    <div class="slider-marks">
+      <span>20</span><span>500</span><span>1000</span><span>2000</span><span>3000</span>
+    </div>
+  </div>
+  <div>目前程式數量：<span class="slider-value" id="programValue">20</span></div>
 
-  <button onclick="calculate()">計算工期</button>
+  <!-- 成熟度系數 -->
+  <label for="maturityLevel">成熟度等級（1～10，每級縮短5%）：</label>
+  <div class="slider-container">
+    <input type="range" id="maturityLevel" min="1" max="10" step="1" value="1" oninput="updateMaturityLabel(this.value)">
+    <div class="slider-marks">
+      <span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span><span>9</span><span>10</span>
+    </div>
+  </div>
+  <div>成熟度系數（工期乘以）：<span class="slider-value" id="maturityValue">1.00</span></div>
 
+  <!-- 計算結果輸出 -->
   <div class="result" id="output"></div>
 
+  <!-- JavaScript 運算邏輯 -->
   <script>
+    const programOptions = [20, 500, 1000, 2000, 3000];
+
     const holidays = [
       '2025-01-01', '2025-01-29', '2025-01-30', '2025-01-31',
       '2025-02-03', '2025-02-04', '2025-02-05', '2025-02-28',
@@ -40,20 +93,44 @@
       return day === 0 || day === 6;
     }
 
+    function updateEngineerLabel(value) {
+      document.getElementById("engineerValue").textContent = value;
+      calculate();
+    }
+
+    function updateProgramLabel(index) {
+      const value = programOptions[parseInt(index)];
+      document.getElementById("programValue").textContent = value;
+      calculate();
+    }
+
+    function updateMaturityLabel(level) {
+      const ratio = 1 - (level - 1) * 0.05;
+      document.getElementById("maturityValue").textContent = ratio.toFixed(2);
+      calculate();
+    }
+
     function calculate() {
       const engineers = parseInt(document.getElementById("engineers").value);
-      const programs = parseInt(document.getElementById("programs").value);
+      const programIndex = parseInt(document.getElementById("programIndex").value);
+      const programs = programOptions[programIndex];
+      const level = parseInt(document.getElementById("maturityLevel").value);
+      const maturityRatio = 1 - (level - 1) * 0.05;
+
+      if (!engineers || !programs || !maturityRatio) return;
+
       const baseEngineers = 4;
       const basePrograms = 20;
       const baseWeeks = 6;
 
-      const estimatedTotalDays = (baseWeeks * 7 * programs / basePrograms) * (baseEngineers / engineers);
+      const rawDays = (baseWeeks * 7 * programs / basePrograms) * (baseEngineers / engineers);
+      const estimatedDays = rawDays * maturityRatio;
 
       const now = new Date();
-      const finishDate = new Date(now);
+      let finishDate = new Date(now);
       let workDaysCount = 0;
 
-      while (workDaysCount < estimatedTotalDays) {
+      while (workDaysCount < estimatedDays) {
         finishDate.setDate(finishDate.getDate() + 1);
         if (!isWeekend(finishDate) && !isHoliday(finishDate)) {
           workDaysCount++;
@@ -62,12 +139,15 @@
 
       const diffYears = (finishDate - now) / (1000 * 60 * 60 * 24 * 365);
 
-      const resultText = `預估實際工作天數：約 ${estimatedTotalDays.toFixed(0)} 天<br>` +
+      const resultText = `原始估算天數：${rawDays.toFixed(0)} 天<br>` +
+                         `應用成熟度系數（x${maturityRatio.toFixed(2)}）後工期：${estimatedDays.toFixed(0)} 天<br>` +
                          `預估完工日（排除六日與國定假日）：${finishDate.toDateString()}<br>` +
                          `距今約 ${diffYears.toFixed(2)} 年`;
 
       document.getElementById("output").innerHTML = resultText;
     }
+
+    window.onload = calculate;
   </script>
 </body>
 </html>
